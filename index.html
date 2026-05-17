@@ -102,6 +102,29 @@ body {
   border-radius: 3px;
   transition: width 0.3s;
 }
+/* 匹配动画页样式 */
+.match-animation {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+}
+.match-text {
+  font-size: 1.6rem;
+  color: #4fc3f7;
+}
+.match-orb {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,215,0,0.6), rgba(255,107,107,0.3), transparent);
+  animation: orbGlow 1.5s ease-in-out infinite;
+  position: relative;
+}
+@keyframes orbGlow {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 30px rgba(255,215,0,0.4); }
+  50% { transform: scale(1.3); box-shadow: 0 0 60px rgba(255,215,0,0.8), 0 0 100px rgba(255,107,107,0.4); }
+}
 /* 答题页样式 */
 .quiz-header {
   display: flex;
@@ -201,7 +224,10 @@ body {
 
 <!-- 匹配动画页 -->
 <div id="matchPage" class="page">
-  <!-- 任务5填充 -->
+  <div class="match-animation">
+    <div class="match-text" id="matchText">AI正在匹配你的守护神兽...</div>
+    <div class="match-orb" id="matchOrb"></div>
+  </div>
 </div>
 
 <!-- 结果页 -->
