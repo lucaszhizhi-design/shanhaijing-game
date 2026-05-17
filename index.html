@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>测测你的山海经守护神兽</title>
+<style>
+/* 全局基础样式 */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Microsoft YaHei', sans-serif;
+  background: #0a0a1a;
+  color: #fff;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+}
+.page { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+.page.active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+/* 后续任务逐步添加各页面样式 */
+</style>
+</head>
+<body>
+<canvas id="particleCanvas"></canvas>
+
+<!-- 开场页 -->
+<div id="startPage" class="page active">
+  <!-- 任务2填充 -->
+</div>
+
+<!-- AI生成动画页 -->
+<div id="aiPage" class="page">
+  <!-- 任务3填充 -->
+</div>
+
+<!-- 答题页 -->
+<div id="quizPage" class="page">
+  <!-- 任务4填充 -->
+</div>
+
+<!-- 匹配动画页 -->
+<div id="matchPage" class="page">
+  <!-- 任务5填充 -->
+</div>
+
+<!-- 结果页 -->
+<div id="resultPage" class="page">
+  <!-- 任务6填充 -->
+</div>
+
+<!-- 图鉴页 -->
+<div id="galleryPage" class="page">
+  <!-- 任务7填充 -->
+</div>
+
+<script>
+// ===== 数据层 =====
+const DIMENSIONS = ['勇气', '智慧', '创意', '友善'];
+
+const BEASTS = [
+  { id: 'qilin', name: '麒麟', dimension: '勇气', index: 0,
+    tags: ['王者风范', '勇猛无畏', '天生领袖'],
+    message: '你有勇气和担当，遇困难从不退缩，麒麟会陪你勇往直前！',
+    image: 'assets/beasts/qilin.png', video: 'assets/beasts/qilin.mp4' },
+  { id: 'suanni', name: '狻猊', dimension: '勇气', index: 1,
+    tags: ['坚毅守护', '忠诚勇敢', '默默坚守'],
+    message: '你虽不张扬，但关键时刻总能挺身而出，狻猊会默默守护你！',
+    image: 'assets/beasts/suanni.png', video: 'assets/beasts/suanni.mp4' },
+  { id: 'baize', name: '白泽', dimension: '智慧', index: 0,
+    tags: ['全知全解', '聪明睿智', '洞察真相'],
+    message: '你好奇心强什么都想知道，白泽会帮你找到每一个答案！',
+    image: 'assets/beasts/baize.png', video: 'assets/beasts/baize.mp4' },
+  { id: 'zhulong', name: '烛龙', dimension: '智慧', index: 1,
+    tags: ['照亮黑暗', '深邃思考', '目光如炬'],
+    message: '你善于深入思考看透本质，烛龙会照亮你前行的方向！',
+    image: 'assets/beasts/zhulong.png', video: 'assets/beasts/zhulong.mp4' },
+  { id: 'qingniao', name: '青鸟', dimension: '创意', index: 0,
+    tags: ['灵动飞翔', '想象无限', '梦想使者'],
+    message: '你的想象力总能飞到意想不到的地方，青鸟会带你飞向梦想！',
+    image: 'assets/beasts/qingniao.png', video: 'assets/beasts/qingniao.mp4' },
+  { id: 'jiutailhu', name: '九尾狐', dimension: '创意', index: 1,
+    tags: ['机敏灵动', '聪明百变', '魅力十足'],
+    message: '你既聪明又有创意总能想出绝妙好点子，九尾狐会陪你灵光闪现！',
+    image: 'assets/beasts/jiutailhu.png', video: 'assets/beasts/jiutailhu.mp4' },
+  { id: 'dangkang', name: '当康', dimension: '友善', index: 0,
+    tags: ['温和守护', '善良可靠', '平安使者'],
+    message: '你让身边人感到安心温暖，当康会守护你和大家平安快乐！',
+    image: 'assets/beasts/dangkang.png', video: 'assets/beasts/dangkang.mp4' },
+  { id: 'lushu', name: '鹿蜀', dimension: '友善', index: 1,
+    tags: ['温暖相伴', '善解人意', '快乐源泉'],
+    message: '你总能给别人带来快乐像阳光一样温暖，鹿蜀会永远陪伴你！',
+    image: 'assets/beasts/lushu.png', video: 'assets/beasts/lushu.mp4' }
+];
+
+// 题库：每组5题，前4题对应4维度，第5题综合细分
+// 每题选项带维度加分
+const QUESTION_BANK = [
+  [
+    {
+      dimension: '勇气',
+      text: '你在一片神秘森林里遇到了一只巨大的怪兽挡住了路，你会？',
+      options: [
+        { text: '拿起木棍，勇敢地冲上前！', scores: {勇气:3} },
+        { text: '仔细观察怪兽，找到它的弱点', scores: {智慧:2, 勇气:1} },
+        { text: '叫上好朋友一起想办法', scores: {友善:2, 创意:1} }
+      ]
+    },
+    {
+      dimension: '智慧',
+      text: '你发现了一本古老的谜题书，上面写着一道谁也解不开的谜题，你会？',
+      options: [
+        { text: '认真思考，一步步推理找出答案', scores: {智慧:3} },
+        { text: '大胆猜一个答案试试看', scores: {勇气:2, 创意:1} },
+        { text: '去找老师或同学一起讨论', scores: {友善:2, 智慧:1} }
+      ]
+    },
+    {
+      dimension: '创意',
+      text: '学校要举办才艺表演，你最想表演什么？',
+      options: [
+        { text: '自己编一个神奇的故事讲给大家听', scores: {创意:3} },
+        { text: '表演一段勇敢的武术动作', scores: {勇气:2, 创意:1} },
+        { text: '和好朋友一起合唱一首温暖的歌曲', scores: {友善:2, 智慧:1} }
+      ]
+    },
+    {
+      dimension: '友善',
+      text: '你的好朋友今天心情不好，你会怎么做？',
+      options: [
+        { text: '陪在他身边，听他说心事', scores: {友善:3} },
+        { text: '帮他分析问题，找到解决办法', scores: {智慧:2, 友善:1} },
+        { text: '想一个好玩的游戏逗他开心', scores: {创意:2, 友善:1} }
+      ]
+    },
+    {
+      dimension: '综合细分',
+      text: '如果你能拥有一种超能力，你最想要？',
+      options: [] // 动态生成，根据主维度填入对应2只神兽的选项
+    }
+  ],
+  [
+    {
+      dimension: '勇气',
+      text: '你和同学们在探险时发现了一个黑漆漆的洞穴，你会？',
+      options: [
+        { text: '第一个走进洞穴探一探！', scores: {勇气:3} },
+        { text: '先在洞口观察里面的声音和光亮', scores: {智慧:2, 勇气:1} },
+        { text: '拉着好朋友的手一起进去', scores: {友善:2, 创意:1} }
+      ]
+    },
+    {
+      dimension: '智慧',
+      text: '你在书里看到了一句很深的话理解不了，你会？',
+      options: [
+        { text: '反复琢磨直到想明白为止', scores: {智慧:3} },
+        { text: '用画画的方式把意思表达出来', scores: {创意:2, 智慧:1} },
+        { text: '去问懂的人帮我解释', scores: {友善:2, 勇气:1} }
+      ]
+    },
+    {
+      dimension: '创意',
+      text: '下雨天不能出去玩，你在家里会做什么？',
+      options: [
+        { text: '用纸箱和彩笔搭一个奇幻城堡', scores: {创意:3} },
+        { text: '读一本探险故事书', scores: {勇气:2, 创意:1} },
+        { text: '给家人做一张温暖的贺卡', scores: {友善:2, 智慧:1} }
+      ]
+    },
+    {
+      dimension: '友善',
+      text: '班上来了一个新同学看起来很孤单，你会？',
+      options: [
+        { text: '主动走过去跟他聊天做朋友', scores: {友善:3} },
+        { text: '邀请他一起参加游戏', scores: {创意:2, 友善:1} },
+        { text: '帮他熟悉学校的环境和规则', scores: {智慧:2, 友善:1} }
+      ]
+    },
+    {
+      dimension: '综合细分',
+      text: '你最想成为什么样的人？',
+      options: [] // 动态生成
+    }
+  ],
+  [
+    {
+      dimension: '勇气',
+      text: '运动会上你要参加一个很难的项目，你会怎么准备？',
+      options: [
+        { text: '拼命练习，一定要拿到好成绩！', scores: {勇气:3} },
+        { text: '研究技巧找最聪明的训练方法', scores: {智慧:2, 勇气:1} },
+        { text: '找小伙伴一起练习互相鼓励', scores: {友善:2, 创意:1} }
+      ]
+    },
+    {
+      dimension: '智慧',
+      text: '你在博物馆看到了一件奇妙的展品，你会？',
+      options: [
+        { text: '仔细阅读旁边的介绍弄明白原理', scores: {智慧:3} },
+        { text: '想象这件展品在古代是怎么用的', scores: {创意:2, 智慧:1} },
+        { text: '叫同学们一起看大家一起讨论', scores: {友善:2, 勇气:1} }
+      ]
+    },
+    {
+      dimension: '创意',
+      text: '如果让你设计一个全新的游戏，你会做成什么样子？',
+      options: [
+        { text: '一个充满魔法和奇幻世界的冒险游戏', scores: {创意:3} },
+        { text: '一个需要勇敢闯关的挑战游戏', scores: {勇气:2, 创意:1} },
+        { text: '一个可以和朋友一起玩的合作游戏', scores: {友善:2, 智慧:1} }
+      ]
+    },
+    {
+      dimension: '友善',
+      text: '下课时有人不小心撞到你，你会？',
+      options: [
+        { text: '微笑说没关系，问他有没有受伤', scores: {友善:3} },
+        { text: '冷静想想是不是自己站的位置不对', scores: {智慧:2, 友善:1} },
+        { text: '开玩笑说没事，化解尴尬气氛', scores: {创意:2, 勇气:1} }
+      ]
+    },
+    {
+      dimension: '综合细分',
+      text: '如果你能变成一只动物，你想变成？',
+      options: [] // 动态生成
+    }
+  ]
+];
+
+// ===== 状态管理 =====
+let gameState = {
+  playerName: '',
+  scores: {勇气:0, 智慧:0, 创意:0, 友善:0},
+  currentQuestion: 0,
+  questions: [],
+  matchedBeast: null
+};
+
+// ===== 匹配算法 =====
+function calculateMatch() {
+  // 找最高分维度
+  let maxScore = 0;
+  let maxDimension = '';
+  for (const dim of DIMENSIONS) {
+    if (gameState.scores[dim] > maxScore) {
+      maxScore = gameState.scores[dim];
+      maxDimension = dim;
+    }
+  }
+  // 第5题选择决定 index (0 或 1)
+  const beastIndex = gameState.fifthChoiceIndex || 0;
+  // 找对应神兽
+  gameState.matchedBeast = BEASTS.find(
+    b => b.dimension === maxDimension && b.index === beastIndex
+  );
+}
+
+// 动态生成第5题选项
+function generateFifthQuestion() {
+  let maxDimension = '';
+  let maxScore = 0;
+  for (const dim of DIMENSIONS) {
+    if (gameState.scores[dim] > maxScore) {
+      maxScore = gameState.scores[dim];
+      maxDimension = dim;
+    }
+  }
+  const beastsInDim = BEASTS.filter(b => b.dimension === maxDimension);
+  const fifthQ = gameState.questions[4];
+  fifthQ.options = [
+    { text: `成为${beastsInDim[0].tags[0]}的${beastsInDim[0].name}`, scores: {}, beastIndex: 0 },
+    { text: `成为${beastsInDim[1].tags[0]}的${beastsInDim[1].name}`, scores: {}, beastIndex: 1 }
+  ];
+}
+
+// ===== 页面切换 =====
+function showPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+}
+
+// ===== 游戏启动 =====
+function startGame(name) {
+  gameState = {
+    playerName: name,
+    scores: {勇气:0, 智慧:0, 创意:0, 友善:0},
+    currentQuestion: 0,
+    questions: [],
+    matchedBeast: null,
+    fifthChoiceIndex: 0
+  };
+  // 随机抽取一组题目
+  const groupIndex = Math.floor(Math.random() * QUESTION_BANK.length);
+  gameState.questions = QUESTION_BANK[groupIndex].map(q => ({...q, options: q.options.map(o => ({...o}))}));
+  showPage('aiPage');
+  // 3秒后切换到答题页
+  setTimeout(() => {
+    showPage('quizPage');
+    renderQuestion(0);
+  }, 3000);
+}
+
+// ===== 答题逻辑 =====
+function selectOption(option) {
+  // 累加维度得分
+  if (option.scores) {
+    for (const [dim, val] of Object.entries(option.scores)) {
+      gameState.scores[dim] += val;
+    }
+  }
+  // 第5题记录 beastIndex
+  if (option.beastIndex !== undefined) {
+    gameState.fifthChoiceIndex = option.beastIndex;
+  }
+  gameState.currentQuestion++;
+  if (gameState.currentQuestion < 5) {
+    if (gameState.currentQuestion === 4) {
+      generateFifthQuestion();
+    }
+    renderQuestion(gameState.currentQuestion);
+  } else {
+    calculateMatch();
+    showPage('matchPage');
+    setTimeout(() => {
+      showPage('resultPage');
+      renderResult();
+    }, 3000);
+  }
+}
+
+function renderQuestion(index) { /* 任务4填充 */ }
+function renderResult() { /* 任务6填充 */ }
+function renderGallery() { /* 任务7填充 */ }
+
+</script>
+</body>
+</html>
