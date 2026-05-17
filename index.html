@@ -270,6 +270,55 @@ body {
   background: transparent;
   color: #ffd700;
 }
+/* 图鉴页样式 */
+.gallery-title {
+  font-size: 2.5rem;
+  color: #ffd700;
+  text-shadow: 0 0 15px rgba(255,215,0,0.4);
+  margin-bottom: 30px;
+}
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  width: 90%;
+  max-width: 900px;
+}
+.gallery-card {
+  background: rgba(255,255,255,0.05);
+  border: 2px solid rgba(255,215,0,0.2);
+  border-radius: 12px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  transition: transform 0.3s, border-color 0.3s;
+  cursor: pointer;
+}
+.gallery-card:hover {
+  transform: scale(1.05);
+  border-color: #ffd700;
+}
+.gallery-card.beast-matched {
+  border-color: #ffd700;
+  box-shadow: 0 0 20px rgba(255,215,0,0.3);
+}
+.gallery-card-img {
+  width: 120px;
+  height: 120px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #222;
+}
+.gallery-card-name {
+  font-size: 1.4rem;
+  color: #ffd700;
+}
+.gallery-card-dim {
+  font-size: 0.9rem;
+  color: #aaa;
+}
 </style>
 </head>
 <body>
@@ -321,7 +370,9 @@ body {
 
 <!-- 图鉴页 -->
 <div id="galleryPage" class="page">
-  <!-- 任务7填充 -->
+  <h2 class="gallery-title">山海经神兽图鉴</h2>
+  <div class="gallery-grid" id="galleryGrid"></div>
+  <button class="result-btn result-btn-primary" onclick="restartGame()" style="margin-top:30px;">返回首页</button>
 </div>
 
 <script>
@@ -683,7 +734,22 @@ function renderResult() {
     video.onended = () => { video.style.display = 'none'; video.nextElementSibling.style.display = 'block'; };
   }
 }
-function renderGallery() { /* 任务7填充 */ }
+function renderGallery() {
+  const grid = document.getElementById('galleryGrid');
+  grid.innerHTML = '';
+  BEASTS.forEach(beast => {
+    const isMatched = gameState.matchedBeast && gameState.matchedBeast.id === beast.id;
+    const card = document.createElement('div');
+    card.className = `gallery-card ${isMatched ? 'beast-matched' : ''}`;
+    card.innerHTML = `
+      <img class="gallery-card-img" src="${beast.image}" alt="${beast.name}"
+           onerror="this.src='';this.style.background='#222';this.alt='${beast.name}';">
+      <div class="gallery-card-name">${beast.name}</div>
+      <div class="gallery-card-dim">${beast.dimension}</div>
+    `;
+    grid.appendChild(card);
+  });
+}
 
 function restartGame() {
   showPage('startPage');
