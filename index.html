@@ -9,14 +9,13 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
   font-family: 'Microsoft YaHei', sans-serif;
-  background: #0a0a1a;
+  background: #0d0d2b;
   color: #fff;
   overflow: hidden;
   width: 100vw;
   height: 100vh;
 }
 .page { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
-.page.active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
 
 /* 开场页样式 */
 .main-title {
@@ -181,11 +180,6 @@ body {
   background: rgba(255,215,0,0.15);
   transform: scale(1.02);
 }
-.quiz-option.selected {
-  border-color: #4fc3f7;
-  background: rgba(79,195,247,0.2);
-  transform: scale(1.05);
-}
 /* 结果页样式 */
 .result-container {
   display: flex;
@@ -319,6 +313,41 @@ body {
   font-size: 0.9rem;
   color: #aaa;
 }
+/* 投影仪优化：大字体、高对比度 */
+.main-title { font-size: 4.5rem; }
+.quiz-question { font-size: 2.2rem; }
+.quiz-option { font-size: 1.5rem; }
+.result-beast-name { font-size: 4rem; }
+.result-message { font-size: 1.5rem; }
+
+/* 页面切换淡入动画 */
+.page.active {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.page.fade-in {
+  animation: fadeIn 0.5s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 答题选项选中弹跳动画 */
+.quiz-option.selected {
+  border-color: #4fc3f7;
+  background: rgba(79,195,247,0.2);
+  transform: scale(1.05);
+  animation: optionSelected 0.5s ease;
+}
+@keyframes optionSelected {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1.05); }
+}
+
 #particleCanvas {
   position: fixed;
   top: 0;
@@ -615,8 +644,14 @@ function generateFifthQuestion() {
 
 // ===== 页面切换 =====
 function showPage(pageId) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById(pageId).classList.add('active');
+  document.querySelectorAll('.page').forEach(p => {
+    p.classList.remove('active');
+    p.classList.remove('fade-in');
+  });
+  const page = document.getElementById(pageId);
+  page.classList.add('active');
+  page.classList.add('fade-in');
+  page.addEventListener('animationend', () => page.classList.remove('fade-in'), { once: true });
   // 联动粒子模式
   if (pageId === 'startPage') setParticleMode('starfield');
   else if (pageId === 'aiPage') setParticleMode('dataflow');
