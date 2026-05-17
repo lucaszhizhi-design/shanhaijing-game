@@ -5,6 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>测测你的山海经守护神兽</title>
 <style>
+.music-btn {
+  position: fixed;
+  top: 15px;
+  right: 15px;
+  z-index: 100;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,215,0,0.4);
+  background: rgba(255,255,255,0.1);
+  color: #ffd700;
+  font-size: 1.3rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  backdrop-filter: blur(4px);
+}
+.music-btn:hover { border-color: #ffd700; background: rgba(255,215,0,0.2); }
+.music-btn.paused { color: #666; border-color: rgba(255,255,255,0.2); }
+
 /* 全局基础样式 */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
@@ -438,6 +457,10 @@ body {
 <body>
 <canvas id="particleCanvas"></canvas>
 
+<!-- 背景音乐 -->
+<audio id="bgMusic" src="配乐.mp3" loop autoplay></audio>
+<button id="musicBtn" class="music-btn" onclick="toggleMusic()">♫</button>
+
 <!-- 开场页 -->
 <div id="startPage" class="page active">
   <h1 class="main-title">测测你的<br>山海经守护神兽</h1>
@@ -695,6 +718,26 @@ let gameState = {
   questions: [],
   matchedBeast: null
 };
+
+// ===== 背景音乐 =====
+function toggleMusic() {
+  const audio = document.getElementById('bgMusic');
+  const btn = document.getElementById('musicBtn');
+  if (audio.paused) {
+    audio.play();
+    btn.classList.remove('paused');
+  } else {
+    audio.pause();
+    btn.classList.add('paused');
+  }
+}
+// 浏览器可能阻止自动播放，首次交互时尝试播放
+document.addEventListener('click', () => {
+  const audio = document.getElementById('bgMusic');
+  if (audio.paused && !document.getElementById('musicBtn').classList.contains('paused')) {
+    audio.play().catch(() => {});
+  }
+}, { once: true });
 
 // ===== 开场页事件 =====
 function onStartClick() {
