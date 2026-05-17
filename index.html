@@ -452,7 +452,7 @@ const BEASTS = [
     image: 'assets/beasts/lushu.svg', video: 'assets/beasts/lushu.mp4' }
 ];
 
-// 题库：每组5题，前4题对应4维度，第5题综合细分
+// 题库：每组5题，全部3选项自动计分
 // 每题选项带维度加分
 const QUESTION_BANK = [
   [
@@ -493,9 +493,13 @@ const QUESTION_BANK = [
       ]
     },
     {
-      dimension: '综合细分',
+      dimension: '勇气',
       text: '如果你能拥有一种超能力，你最想要？',
-      options: [] // 动态生成，根据主维度填入对应2只神兽的选项
+      options: [
+        { text: '穿墙术，想去哪就去哪！', scores: {勇气:2, 创意:1} },
+        { text: '读心术，知道别人在想什么', scores: {智慧:2, 友善:1} },
+        { text: '变形术，变成任何样子', scores: {创意:2, 智慧:1} }
+      ]
     }
   ],
   [
@@ -536,9 +540,13 @@ const QUESTION_BANK = [
       ]
     },
     {
-      dimension: '综合细分',
+      dimension: '智慧',
       text: '你最想成为什么样的人？',
-      options: [] // 动态生成
+      options: [
+        { text: '带领大家前进的领导者', scores: {勇气:2, 智慧:1} },
+        { text: '让所有人都开心的开心果', scores: {友善:2, 创意:1} },
+        { text: '能想出各种好点子的发明家', scores: {创意:2, 智慧:1} }
+      ]
     }
   ],
   [
@@ -579,9 +587,13 @@ const QUESTION_BANK = [
       ]
     },
     {
-      dimension: '综合细分',
+      dimension: '友善',
       text: '如果你能变成一只动物，你想变成？',
-      options: [] // 动态生成
+      options: [
+        { text: '勇猛的老鹰，自由翱翔', scores: {勇气:2, 创意:1} },
+        { text: '温暖的大熊猫，让人安心', scores: {友善:2, 勇气:1} },
+        { text: '聪明的海豚，帮助别人', scores: {智慧:2, 友善:1} }
+      ]
     }
   ]
 ];
@@ -606,40 +618,24 @@ function onStartClick() {
 }
 
 // ===== 匹配算法 =====
+// 主导维度决定大类，第二高维度决定该大类中的哪只神兽
+const SUB_MATCH = {
+  '勇气': { '智慧': 0, '创意': 0, '友善': 1 },  // 0=麒麟(王者型), 1=狻猊(守护型)
+  '智慧': { '勇气': 1, '创意': 0, '友善': 0 },  // 0=白泽(洞察型), 1=烛龙(深邃型)
+  '创意': { '勇气': 0, '智慧': 1, '友善': 0 },  // 0=青鸟(梦想型), 1=九尾狐(灵巧型)
+  '友善': { '勇气': 0, '创意': 1, '智慧': 0 },  // 0=当康(守护型), 1=鹿蜀(快乐型)
+};
+
 function calculateMatch() {
-  // 找最高分维度
-  let maxScore = 0;
-  let maxDimension = '';
-  for (const dim of DIMENSIONS) {
-    if (gameState.scores[dim] > maxScore) {
-      maxScore = gameState.scores[dim];
-      maxDimension = dim;
-    }
-  }
-  // 第5题选择决定 index (0 或 1)
-  const beastIndex = gameState.fifthChoiceIndex || 0;
-  // 找对应神兽
+  // 找最高分和第二高分维度
+  const sorted = DIMENSIONS.map(dim => ({ dim, score: gameState.scores[dim] }))
+    .sort((a, b) => b.score - a.score);
+  const maxDimension = sorted[0].dim;
+  const secondDimension = sorted[1].dim;
+  const beastIndex = SUB_MATCH[maxDimension][secondDimension];
   gameState.matchedBeast = BEASTS.find(
     b => b.dimension === maxDimension && b.index === beastIndex
   );
-}
-
-// 动态生成第5题选项
-function generateFifthQuestion() {
-  let maxDimension = '';
-  let maxScore = 0;
-  for (const dim of DIMENSIONS) {
-    if (gameState.scores[dim] > maxScore) {
-      maxScore = gameState.scores[dim];
-      maxDimension = dim;
-    }
-  }
-  const beastsInDim = BEASTS.filter(b => b.dimension === maxDimension);
-  const fifthQ = gameState.questions[4];
-  fifthQ.options = [
-    { text: `成为${beastsInDim[0].tags[0]}的${beastsInDim[0].name}`, scores: {}, beastIndex: 0 },
-    { text: `成为${beastsInDim[1].tags[0]}的${beastsInDim[1].name}`, scores: {}, beastIndex: 1 }
-  ];
 }
 
 // ===== 页面切换 =====
@@ -687,8 +683,7 @@ function startGame(name) {
     scores: {勇气:0, 智慧:0, 创意:0, 友善:0},
     currentQuestion: 0,
     questions: [],
-    matchedBeast: null,
-    fifthChoiceIndex: 0
+    matchedBeast: null
   };
   // 随机抽取一组题目
   const groupIndex = Math.floor(Math.random() * QUESTION_BANK.length);
@@ -705,20 +700,11 @@ function startGame(name) {
 // ===== 答题逻辑 =====
 function selectOption(option) {
   // 累加维度得分
-  if (option.scores) {
-    for (const [dim, val] of Object.entries(option.scores)) {
-      gameState.scores[dim] += val;
-    }
-  }
-  // 第5题记录 beastIndex
-  if (option.beastIndex !== undefined) {
-    gameState.fifthChoiceIndex = option.beastIndex;
+  for (const [dim, val] of Object.entries(option.scores)) {
+    gameState.scores[dim] += val;
   }
   gameState.currentQuestion++;
   if (gameState.currentQuestion < 5) {
-    if (gameState.currentQuestion === 4) {
-      generateFifthQuestion();
-    }
     renderQuestion(gameState.currentQuestion);
   } else {
     calculateMatch();
