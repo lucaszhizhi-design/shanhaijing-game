@@ -17,7 +17,91 @@ body {
 }
 .page { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
 .page.active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+/* 开场页样式 */
+.main-title {
+  font-size: 4rem;
+  text-align: center;
+  color: #ffd700;
+  text-shadow: 0 0 20px rgba(255,215,0,0.6), 0 0 40px rgba(255,215,0,0.3);
+  margin-bottom: 20px;
+  line-height: 1.3;
+}
+.start-subtitle {
+  font-size: 1.4rem;
+  color: #aaa;
+  margin-bottom: 40px;
+}
+.name-input-area {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+.name-input {
+  font-size: 1.5rem;
+  padding: 12px 24px;
+  border: 2px solid #ffd700;
+  border-radius: 8px;
+  background: rgba(255,215,0,0.1);
+  color: #fff;
+  outline: none;
+  width: 240px;
+}
+.name-input:focus {
+  border-color: #ff6b6b;
+  box-shadow: 0 0 15px rgba(255,107,107,0.4);
+}
+.start-btn {
+  font-size: 1.5rem;
+  padding: 12px 32px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #ffd700, #ff6b6b);
+  color: #0a0a1a;
+  cursor: pointer;
+  font-weight: bold;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.start-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(255,215,0,0.5);
+}
 /* 后续任务逐步添加各页面样式 */
+
+/* AI动画页样式 */
+.ai-animation {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+.ai-icon {
+  font-size: 4rem;
+  animation: aiPulse 1s ease-in-out infinite;
+}
+@keyframes aiPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+}
+.ai-text {
+  font-size: 1.6rem;
+  color: #4fc3f7;
+  min-height: 2rem;
+}
+.ai-progress-bar {
+  width: 300px;
+  height: 6px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.ai-progress-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #4fc3f7, #ffd700);
+  border-radius: 3px;
+  transition: width 0.3s;
+}
 </style>
 </head>
 <body>
@@ -25,12 +109,23 @@ body {
 
 <!-- 开场页 -->
 <div id="startPage" class="page active">
-  <!-- 任务2填充 -->
+  <h1 class="main-title">测测你的<br>山海经守护神兽</h1>
+  <p class="start-subtitle">AI将为你生成专属题目，匹配属于你的神兽</p>
+  <div class="name-input-area">
+    <input type="text" id="nameInput" class="name-input" placeholder="请输入你的名字" maxlength="10">
+    <button id="startBtn" class="start-btn" onclick="onStartClick()">开始测试</button>
+  </div>
 </div>
 
 <!-- AI生成动画页 -->
 <div id="aiPage" class="page">
-  <!-- 任务3填充 -->
+  <div class="ai-animation">
+    <div class="ai-icon">🤖</div>
+    <div class="ai-text" id="aiText"></div>
+    <div class="ai-progress-bar">
+      <div class="ai-progress-fill" id="aiProgressFill"></div>
+    </div>
+  </div>
 </div>
 
 <!-- 答题页 -->
@@ -235,6 +330,16 @@ let gameState = {
   matchedBeast: null
 };
 
+// ===== 开场页事件 =====
+function onStartClick() {
+  const name = document.getElementById('nameInput').value.trim();
+  if (!name) {
+    document.getElementById('nameInput').style.borderColor = '#ff6b6b';
+    return;
+  }
+  startGame(name);
+}
+
 // ===== 匹配算法 =====
 function calculateMatch() {
   // 找最高分维度
@@ -279,6 +384,25 @@ function showPage(pageId) {
 }
 
 // ===== 游戏启动 =====
+function playAiAnimation() {
+  const textEl = document.getElementById('aiText');
+  const progressEl = document.getElementById('aiProgressFill');
+  const fullText = `AI正在为${gameState.playerName}生成专属题目...`;
+  let charIndex = 0;
+  textEl.textContent = '';
+  progressEl.style.width = '0%';
+
+  const typeInterval = setInterval(() => {
+    if (charIndex < fullText.length) {
+      textEl.textContent += fullText[charIndex];
+      charIndex++;
+      progressEl.style.width = `${(charIndex / fullText.length) * 100}%`;
+    } else {
+      clearInterval(typeInterval);
+    }
+  }, 80);
+}
+
 function startGame(name) {
   gameState = {
     playerName: name,
@@ -292,6 +416,7 @@ function startGame(name) {
   const groupIndex = Math.floor(Math.random() * QUESTION_BANK.length);
   gameState.questions = QUESTION_BANK[groupIndex].map(q => ({...q, options: q.options.map(o => ({...o}))}));
   showPage('aiPage');
+  playAiAnimation();
   // 3秒后切换到答题页
   setTimeout(() => {
     showPage('quizPage');
