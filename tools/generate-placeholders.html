@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>生成占位素材</title></head>
+<body>
+<h2>点击下方按钮生成占位神兽图片</h2>
+<div id="outputs"></div>
+<script>
+const beasts = ['qilin','suanni','baize','zhulong','qingniao','jiutailhu','dangkang','lushu'];
+const colors = ['#ffd700','#ff6b6b','#4fc3f7','#ab47bc','#66bb6a','#e91e63','#8d6e63','#81d4fa'];
+const names = ['麒麟','狻猊','白泽','烛龙','青鸟','九尾狐','当康','鹿蜀'];
+const outputs = document.getElementById('outputs');
+
+beasts.forEach((id, i) => {
+  const c = document.createElement('canvas');
+  c.width = 400; c.height = 400;
+  const ctx = c.getContext('2d');
+  const grad = ctx.createRadialGradient(200,200,50,200,200,200);
+  grad.addColorStop(0, colors[i]);
+  grad.addColorStop(1, '#0a0a1a');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,400,400);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 48px Microsoft YaHei';
+  ctx.textAlign = 'center';
+  ctx.fillText(names[i], 200, 210);
+  ctx.beginPath();
+  ctx.arc(200,200,120,0,Math.PI*2);
+  ctx.strokeStyle = colors[i];
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  const div = document.createElement('div');
+  div.style.margin = '10px';
+  const img = document.createElement('img');
+  img.src = c.toDataURL('image/png');
+  img.style.width = '200px';
+  div.appendChild(document.createTextNode(names[i] + ': '));
+  div.appendChild(img);
+
+  const link = document.createElement('a');
+  link.download = `${id}.png`;
+  link.href = c.toDataURL('image/png');
+  link.textContent = '下载 ' + names[i];
+  div.appendChild(link);
+  outputs.appendChild(div);
+});
+</script>
+</body>
+</html>
